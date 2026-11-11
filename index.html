@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4c1d95">
+<title>HRD TUH</title>
+<meta name="description" content="งานพัฒนาทรัพยากรมนุษย์ โรงพยาบาลธรรมศาสตร์เฉลิมพระเกียรติ">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="HRD TUH">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta property="og:title" content="HRD TUH — งานพัฒนาทรัพยากรมนุษย์">
+<meta property="og:image" content="icon-512.png">
+<style>
+  :root{
+    /* ความสูงที่ตัดทิ้งด้านบน (px) เผื่อแถบ "แอปพลิเคชันนี้สร้างโดยผู้ใช้ Google Apps Script"
+       ตั้งเป็น 0 = ไม่ตัดอะไร เห็นหน้าเต็ม (ตรวจแล้วว่าบัญชีนี้ไม่มีแถบนั้น)
+       ถ้าวันหนึ่งแถบโผล่ขึ้นมา ค่อยเพิ่มเป็น 40px */
+    --banner-crop: 0px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#fff}
+  #stage{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;overflow:hidden}
+  #app{
+    position:absolute;left:0;top:calc(var(--banner-crop) * -1);
+    width:100%;height:calc(100% + var(--banner-crop));
+    border:0;display:block;
+  }
+  #loader{
+    position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:18px;background:#faf8ff;color:#4c1d95;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+    transition:opacity .5s ease,visibility .5s ease;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  #loader.hide{opacity:0;visibility:hidden;pointer-events:none}
+  .logo{width:120px;height:120px;border-radius:50%;box-shadow:0 10px 30px -10px rgba(76,29,149,.45)}
+  .name{font-size:1.6rem;font-weight:700;letter-spacing:.04em}
+  .spin{width:44px;height:44px;border-radius:50%;border:4px solid #e4dcf7;border-top-color:#f5b800;animation:r .9s linear infinite}
+  .hint{font-size:.9rem;color:#7a6aa8}
+  .retry{display:none;text-align:center;font-size:.9rem;max-width:320px;line-height:1.5;color:#5b4a8a}
+  .retry.show{display:block}
+  .retry button{margin:10px 4px 0;padding:9px 18px;border-radius:999px;border:0;background:#4c1d95;color:#fff;font-size:.95rem;cursor:pointer}
+  .retry button.alt{background:#fff;color:#4c1d95;border:1px solid #c9bbea}
+  @keyframes r{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
+  noscript{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:#fff;font-family:sans-serif}
+</style>
+</head>
+<body>
+<div id="stage">
+  <iframe id="app" title="HRD TUH" allow="fullscreen" allowfullscreen
+          referrerpolicy="no-referrer-when-downgrade" scrolling="no"></iframe>
+</div>
+
+<div id="loader" role="status" aria-live="polite">
+  <img class="logo" src="logo.png" alt="HRD TUH" width="120" height="120">
+  <div class="name">HRD TUH</div>
+  <div class="spin" aria-hidden="true"></div>
+  <div class="hint">กำลังโหลด...</div>
+  <div id="retry" class="retry">
+    <div>โหลดนานกว่าปกติ อาจเกิดจากอินเทอร์เน็ต หรือเบราว์เซอร์บล็อกคุกกี้ของ Google</div>
+    <button id="retryBtn" type="button">ลองใหม่</button>
+    <button id="openBtn" type="button" class="alt">เปิดในแท็บใหม่</button>
+  </div>
+</div>
+<noscript>กรุณาเปิดใช้งาน JavaScript เพื่อใช้งานระบบ</noscript>
+
+<script>
+(function () {
+  var EXEC = 'https://script.google.com/macros/s/AKfycbzFAf-bBt-haQwTzt6juDObvOPpGD-6mwynq4D7-zS5PUYuhNF_pGa-vezXZC6Y72Dcfg/exec';
+  var frame = document.getElementById('app');
+  var loader = document.getElementById('loader');
+  var done = false;
+
+  function hideLoader() {
+    if (done) return;
+    done = true;
+    loader.classList.add('hide');
+  }
+  function showLoader() {
+    done = false;
+    loader.classList.remove('hide');
+  }
+  var go = function (url) {
+    showLoader();
+    frame.src = url;
+    // จำหน้าปัจจุบันไว้บนแถบ address (?page=...) เพื่อให้กด F5 / Ctrl+Shift+R แล้วกลับมาหน้าเดิม ไม่เด้งไปหน้าแรก
+    try { var q = url.indexOf('?'); history.replaceState(null, '', window.location.pathname + (q >= 0 ? url.slice(q) : '')); } catch (e) {}
+  };
+
+  frame.addEventListener('load', hideLoader);
+  // เปิดตรงๆ ด้วย ?page=schedule ฯลฯ ให้ส่งต่อไปยังระบบจริง (ที่อยู่บนแถบ address ยังเป็นโดเมนเรา)
+  var qs = window.location.search || '';
+  go(EXEC + qs);
+
+  // ลิงก์ภายในระบบ (ฝั่ง Apps Script ส่งข้อความมาบอก) -> เปลี่ยน src ของ iframe แทนการออกจากหน้านี้
+  // ใช้เฉพาะส่วน query (?page=...) ต่อท้าย EXEC ของเราเอง ไม่ขึ้นกับรูปแบบโดเมนที่ Google ส่งมา
+  // (บางบัญชี/โดเมน Google คืน URL คนละรูปแบบ ทำให้เมนูไม่ทำงาน)
+  // ---- สถานะเข้าสู่ระบบของบุคลากร (เก็บในแท็บนี้เท่านั้น: ปิดเว็บ/แท็บแล้วเข้าใหม่ต้องล็อกอินใหม่) ----
+  // หน้าเว็บภายใน iframe ถามสถานะผ่าน postMessage ทุกครั้งที่โหลดหน้าใหม่ (ต้นทางของ iframe เปลี่ยนทุกหน้า เก็บเองไม่ได้)
+  var SESS_KEY = 'hrdUser';
+  function sessRead() { try { var v = JSON.parse(sessionStorage.getItem(SESS_KEY) || 'null'); return v && v.email ? v : null; } catch (e) { return null; } }
+  function sessWrite(u) { try { if (u && u.email) sessionStorage.setItem(SESS_KEY, JSON.stringify({ name: String(u.name || ''), email: String(u.email), reqAdmin: !!u.reqAdmin })); else sessionStorage.removeItem(SESS_KEY); } catch (e) {} }
+  function okOrigin(origin) {
+    var host = '';
+    try { host = new URL(origin).hostname; } catch (e) { return false; }
+    return /\.googleusercontent\.com$/.test(host) || host === 'script.google.com';
+  }
+
+  window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (!d || typeof d.hrdSess !== 'string') return;
+    if (!okOrigin(ev.origin)) return;
+    if (d.hrdSess === 'set') sessWrite(d.user);
+    else if (d.hrdSess === 'clear') sessWrite(null);
+    else if (d.hrdSess === 'get') { try { ev.source.postMessage({ hrdSessState: sessRead() }, ev.origin); } catch (e) {} }
+  });
+
+  window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (!d || typeof d.hrdNav !== 'string') return;
+    if (!okOrigin(ev.origin)) return;
+    var u;
+    try { u = new URL(d.hrdNav); } catch (e) { return; }
+    if (u.hostname !== 'script.google.com' || u.pathname.indexOf('/macros/') === -1) return;
+    go(EXEC + (u.search || ''));
+  });
+
+  // ถ้าโหลดไม่ขึ้นใน 15 วินาที ให้แสดงปุ่มลองใหม่ (แทนที่จะค้างหน้าโหลดตลอด)
+  var retry = document.getElementById('retry');
+  var lastTry = performance.now();
+  var origGo = go;
+  go = function (url) { lastTry = performance.now(); retry.classList.remove('show'); origGo(url); };
+  setInterval(function () {
+    if (!done && performance.now() - lastTry > 15000) retry.classList.add('show');
+  }, 1000);
+  document.getElementById('retryBtn').addEventListener('click', function () { go(frame.src || EXEC); });
+  document.getElementById('openBtn').addEventListener('click', function () { window.open(frame.src || EXEC, '_blank'); });
+})();
+if ('serviceWorker' in navigator) { window.addEventListener('load', function () { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }); }
+</script>
+</body>
+</html>

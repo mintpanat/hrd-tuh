@@ -122,6 +122,18 @@
     else if (d.hrdSess === 'get') { try { ev.source.postMessage({ hrdSessState: sessRead() }, ev.origin); } catch (e) {} }
   });
 
+  // ---- ภาษาที่เลือก (TH/EN) เก็บไว้ที่หน้าห่อ เพื่อให้ทุกหน้าในระบบใช้ภาษาเดียวกัน ----
+  var LANG_KEY = 'hrdLang';
+  function langRead() { try { return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'th'; } catch (e) { return 'th'; } }
+  function langWrite(l) { try { localStorage.setItem(LANG_KEY, l === 'en' ? 'en' : 'th'); } catch (e) {} }
+  window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (!d || typeof d.hrdLang !== 'string') return;
+    if (!okOrigin(ev.origin)) return;
+    if (d.hrdLang === 'set') { langWrite(d.lang); document.documentElement.lang = d.lang === 'en' ? 'en' : 'th'; }
+    else if (d.hrdLang === 'get') { try { ev.source.postMessage({ hrdLangState: langRead() }, ev.origin); } catch (e) {} }
+  });
+
   window.addEventListener('message', function (ev) {
     var d = ev.data;
     if (!d || typeof d.hrdNav !== 'string') return;
